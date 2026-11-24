@@ -1,0 +1,16 @@
+# Finales de línea estables en todo el equipo (Windows, macOS y Linux).
+* text=auto
+
+# Scripts que se ejecutan en Linux (Docker, Heroku): siempre LF o fallan con "/bin/sh^M".
+gradlew text eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
+
+# Scripts de Windows.
+*.bat text eol=crlf
+
+# Binarios.
+*.jar binary
+*.ttf binary
+*.png binary
+*.webp binary

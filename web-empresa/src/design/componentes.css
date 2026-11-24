@@ -1,0 +1,818 @@
+/* ---------- Íconos (Material Symbols Outlined) ---------- */
+.icono {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ---------- Botones (44–48 px de alto) ---------- */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--cr-alto-boton);
+  padding: 0 18px;
+  border-radius: var(--cr-radio-boton);
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.boton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.boton--primario {
+  background: var(--cr-azul);
+  color: #fff;
+}
+
+.boton--secundario {
+  background: var(--cr-superficie);
+  color: var(--cr-azul);
+  border-color: var(--cr-azul);
+}
+
+/* CTA de venta: verde con flecha para que resalte sobre el azul marino. */
+.boton--cta {
+  background: var(--cr-verde);
+  color: #fff;
+}
+
+.boton-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ---------- Tarjetas ---------- */
+.tarjeta {
+  background: var(--cr-superficie);
+  border: 1px solid var(--cr-borde);
+  border-radius: var(--cr-radio-tarjeta);
+  padding: 20px;
+}
+
+.kpi__titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cr-texto-2);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.kpi__valor {
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.kpi__detalle {
+  color: var(--cr-texto-2);
+  font-size: 0.85rem;
+}
+
+/* ---------- Avisos ---------- */
+.aviso {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.aviso--ambar {
+  background: var(--cr-ambar-fondo);
+  color: var(--cr-ambar-texto);
+}
+
+.aviso--rojo {
+  background: var(--cr-rojo-fondo);
+  color: var(--cr-rojo-texto);
+}
+
+/* ---------- Chips y sellos ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip--rojo {
+  background: var(--cr-rojo-fondo);
+  color: var(--cr-rojo-texto);
+}
+
+.chip--ambar {
+  background: var(--cr-ambar-fondo);
+  color: var(--cr-ambar-texto);
+}
+
+.chip--verde {
+  background: var(--cr-verde-tinte);
+  color: var(--cr-verde-texto);
+}
+
+.chip--neutro {
+  background: var(--cr-fondo);
+  color: var(--cr-texto-2);
+}
+
+.chip .icono {
+  font-size: 16px;
+}
+
+.sello--confirmado {
+  background: var(--cr-sello-confirmado);
+  color: #fff;
+}
+
+/* Texto oscuro: el blanco sobre #6C8CA3 no llega a 4.5:1. */
+.sello--declarado {
+  background: var(--cr-sello-declarado);
+  color: var(--cr-texto);
+}
+
+.sello--no-cumple {
+  background: var(--cr-sello-no-cumple);
+  color: var(--cr-texto);
+}
+
+.selector-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selector-chips button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--cr-borde);
+  background: var(--cr-superficie);
+  color: var(--cr-texto);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.selector-chips button[aria-pressed="true"] {
+  background: var(--cr-azul-tinte);
+  border-color: var(--cr-azul);
+  color: var(--cr-azul);
+}
+
+/* ---------- Pasos ---------- */
+.pasos__texto {
+  color: var(--cr-texto-2);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.pasos__barra {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.pasos__barra span {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--cr-borde);
+}
+
+.pasos__barra span.hecho {
+  background: var(--cr-azul);
+}
+
+/* ---------- Menú lateral ---------- */
+.menu {
+  display: flex;
+  flex-direction: column;
+  background: var(--cr-menu);
+  color: #fff;
+  padding: 20px 12px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.menu__logo {
+  font-size: 1.25rem;
+  font-weight: 800;
+  padding: 4px 12px 20px;
+}
+
+.menu__logo small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.menu__cerrar {
+  display: none;
+}
+
+.menu nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: rgb(255 255 255 / 85%);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.menu nav a:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+.menu nav a.activo {
+  background: var(--cr-menu-activo);
+  color: #fff;
+}
+
+.menu__medidor {
+  margin-top: auto;
+  padding: 16px 12px 4px;
+  border-top: 1px solid rgb(255 255 255 / 15%);
+  font-size: 0.85rem;
+}
+
+.medidor__barra {
+  height: 6px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 20%);
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.medidor__barra span {
+  display: block;
+  height: 100%;
+  background: #fff;
+}
+
+.menu__medidor a {
+  color: #fff;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .menu {
+    position: fixed;
+    z-index: 40;
+    inset: 0 auto 0 0;
+    width: min(85vw, 300px);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .menu--abierto {
+    transform: translateX(0);
+  }
+
+  .menu__cerrar {
+    display: inline-flex;
+    position: absolute;
+    top: 12px;
+    right: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    transition: none;
+  }
+}
+
+/* ---------- Tabla ---------- */
+.tabla-contenedor {
+  overflow-x: auto;
+  border: 1px solid var(--cr-borde);
+  border-radius: var(--cr-radio-tarjeta);
+  background: var(--cr-superficie);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.tabla th,
+.tabla td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--cr-borde);
+  white-space: nowrap;
+}
+
+.tabla th {
+  color: var(--cr-texto-2);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.tabla tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabla .derecha {
+  text-align: right;
+}
+
+/* ---------- Calendario ---------- */
+.calendario__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calendario__mes {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.calendario table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendario th {
+  font-size: 0.75rem;
+  color: var(--cr-texto-2);
+  font-weight: 700;
+  padding-bottom: 6px;
+}
+
+.calendario td {
+  padding: 2px;
+  text-align: center;
+}
+
+.calendario td button {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cr-texto);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendario td button:hover:not(:disabled) {
+  border-color: var(--cr-borde);
+}
+
+.calendario td button:disabled {
+  color: var(--cr-texto-2);
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.calendario td button[aria-pressed="true"] {
+  background: var(--cr-azul);
+  color: #fff;
+}
+
+.calendario td button.hoy {
+  border-color: var(--cr-azul);
+}
+
+/* ---------- Listas ---------- */
+.lista-simple {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lista-simple li + li {
+  border-top: 1px solid var(--cr-borde);
+}
+
+.lista-simple a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 4px;
+  text-decoration: none;
+  color: var(--cr-texto);
+}
+
+.lista-simple a[aria-current="page"] {
+  font-weight: 700;
+  color: var(--cr-azul);
+}
+
+.texto-secundario {
+  color: var(--cr-texto-2);
+}
+
+/* ---------- Formularios ---------- */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo label,
+.campo__titulo {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  font: inherit;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--cr-borde);
+  border-radius: 10px;
+  background: var(--cr-superficie);
+  color: var(--cr-texto);
+}
+
+.campo textarea {
+  resize: vertical;
+}
+
+.campo [aria-invalid="true"] {
+  border-color: var(--cr-rojo-texto);
+}
+
+.campo__ayuda {
+  font-size: 0.82rem;
+  color: var(--cr-texto-2);
+}
+
+.campo__error {
+  font-size: 0.82rem;
+  color: var(--cr-rojo-texto);
+  font-weight: 600;
+}
+
+.cuadricula-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.interruptor {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.interruptor__control {
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  margin: 2px 0;
+  border-radius: 999px;
+  border: 0;
+  background: var(--cr-sello-no-cumple);
+  position: relative;
+  cursor: pointer;
+}
+
+.interruptor__control.activo {
+  background: var(--cr-verde);
+}
+
+.interruptor__perilla {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s ease;
+}
+
+.interruptor__control.activo .interruptor__perilla {
+  left: 25px;
+}
+
+.interruptor__etiqueta {
+  font-weight: 700;
+}
+
+.dialogo {
+  border: 0;
+  border-radius: var(--cr-radio-tarjeta);
+  padding: 24px;
+  width: min(92vw, 480px);
+  color: var(--cr-texto);
+}
+
+.dialogo::backdrop {
+  background: rgb(15 45 64 / 45%);
+}
+
+.dialogo h2 {
+  margin-bottom: 12px;
+}
+
+.dialogo__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.fila-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.estado-guardado {
+  color: var(--cr-verde-texto);
+  font-weight: 700;
+}
+
+/* ---------- Perfil ---------- */
+.logo-empresa {
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  border: 1px solid var(--cr-borde);
+  object-fit: cover;
+  background: var(--cr-azul-tinte);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--cr-azul);
+}
+
+/* ---------- Requisitos (E03) ---------- */
+.tabla-requisitos input,
+.tabla-requisitos select {
+  font: inherit;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid var(--cr-borde);
+  border-radius: 8px;
+  width: 100%;
+  min-width: 120px;
+}
+
+.tabla-requisitos td {
+  white-space: normal;
+}
+
+.lista-viñetas {
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* ---------- Candidatos (E04) ---------- */
+.lista-candidatos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-candidatos a {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--cr-borde);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--cr-texto);
+}
+
+.lista-candidatos a[aria-current="page"] {
+  border-color: var(--cr-azul);
+  background: var(--cr-azul-tinte);
+}
+
+.barra-sellos {
+  display: flex;
+  gap: 3px;
+}
+
+.barra-sellos span {
+  flex: 1;
+  height: 6px;
+  border-radius: 6px;
+}
+
+.fila-requisito {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cr-borde);
+}
+
+.fila-requisito:last-child {
+  border-bottom: 0;
+}
+
+.bloqueado {
+  background: var(--cr-fondo);
+  border: 1px dashed var(--cr-borde);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+/* ---------- Entrevistas (E07) ---------- */
+.horarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.horarios button {
+  min-height: 44px;
+  border: 1px solid var(--cr-borde);
+  border-radius: 10px;
+  background: var(--cr-superficie);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.horarios button[aria-pressed="true"] {
+  background: var(--cr-azul);
+  border-color: var(--cr-azul);
+  color: #fff;
+}
+
+.horarios button:disabled {
+  opacity: 0.45;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+/* ---------- Planes (E06) ---------- */
+.cuadricula-planes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.tarjeta-plan--destacada {
+  border: 2px solid var(--cr-verde);
+}
+
+.precio-grande {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+/* Botón que se ve como enlace (acciones dentro de un texto). */
+.boton-texto {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Sesión y pantallas de acceso (F5) ---------- */
+.menu__sesion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 12px 0;
+  font-size: 0.82rem;
+  opacity: 0.9;
+  overflow-wrap: anywhere;
+}
+
+.acceso {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--cr-fondo);
+}
+
+.acceso__tarjeta {
+  width: min(100%, 440px);
+}
+
+.acceso__logo {
+  color: var(--cr-azul);
+  padding: 0;
+}
+
+/* ---------- F9: campanita y lista de notificaciones ---------- */
+.insignia {
+  margin-left: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--cr-rojo-texto);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+
+.lista-notificaciones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lista-notificaciones li + li {
+  border-top: 1px solid var(--cr-borde);
+}
+
+.lista-notificaciones a,
+.lista-notificaciones button {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 14px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lista-notificaciones li.no-leida strong {
+  color: var(--cr-azul);
+}
+
+.punto-no-leida {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin: 6px 0 0 auto;
+  border-radius: 50%;
+  background: var(--cr-azul);
+}

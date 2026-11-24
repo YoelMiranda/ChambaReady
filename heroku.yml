@@ -1,0 +1,4 @@
+# Despliegue en Heroku con contenedor (stack "container"). Ver docs/despliegue.md.
+build:
+  docker:
+    web: Dockerfile

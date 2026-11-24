@@ -1,0 +1,43 @@
+# ---------- Secretos: nunca se suben ----------
+local.properties
+google-services.json
+GoogleService-Info.plist
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.key
+*.pem
+*.p12
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+
+# ---------- Android / Gradle ----------
+.gradle/
+.kotlin/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# ---------- IDE / sistema ----------
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ---------- Web (React + Vite) ----------
+node_modules/
+dist/
+.vite/
+.wrangler/
+*.local
+
+# ---------- Backend (F4) ----------
+backend/out/

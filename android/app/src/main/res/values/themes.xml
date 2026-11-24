@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema de la ventana (antes de que Compose dibuje). Los colores reales viven en ChambaReadyTheme. -->
+    <style name="Theme.ChambaReady" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fondo_practicante</item>
+    </style>
+
+    <color name="fondo_practicante">#F6F8F7</color>
+    <color name="verde_primario">#1A7A4A</color>
+</resources>

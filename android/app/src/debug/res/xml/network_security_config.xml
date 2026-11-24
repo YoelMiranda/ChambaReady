@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Solo en builds de DEPURACIÓN: permite HTTP (sin TLS) hacia el backend local.
+  10.0.2.2 es tu PC vista desde el emulador. En release no existe este archivo, así que
+  Android exige HTTPS (Heroku ya lo da).
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

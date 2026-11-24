@@ -1,0 +1,15 @@
+<configuration>
+    <!-- Logs a la consola (en Heroku se ven con el comando heroku logs y la opción tail). Nunca registres tokens ni datos personales. -->
+    <appender name="CONSOLA" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{20} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="com.zaxxer.hikari" level="WARN" />
+    <logger name="org.flywaydb" level="INFO" />
+    <logger name="Exposed" level="WARN" />
+    <logger name="io.zonky" level="WARN" />
+    <root level="INFO">
+        <appender-ref ref="CONSOLA" />
+    </root>
+</configuration>

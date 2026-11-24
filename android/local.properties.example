@@ -1,0 +1,10 @@
+# Copia este archivo como local.properties (está en .gitignore) y completa los valores.
+# Android Studio agrega sdk.dir por su cuenta al abrir el proyecto.
+sdk.dir=C\:\\Users\\TU_USUARIO\\AppData\\Local\\Android\\Sdk
+
+# Valores NO secretos. En el emulador, 10.0.2.2 apunta a tu PC.
+API_BASE_URL=http://10.0.2.2:8080/v1/
+WEB_EMPRESA_URL=http://10.0.2.2:5173/
+
+# F5. El login real necesita app/google-services.json (ver docs/firebase.md); sin él, la app
+# corre en modo demo con datos de prueba.

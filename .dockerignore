@@ -1,0 +1,14 @@
+# Solo backend/ y android/core/domain entran a la imagen: lo demás se ignora para que el build sea rápido.
+**/build
+**/.gradle
+**/.kotlin
+**/node_modules
+web-empresa
+docs
+android/app
+android/core/data
+android/core/designsystem
+**/.env
+**/.env.*
+**/local.properties
+**/google-services.json

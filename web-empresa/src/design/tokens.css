@@ -1,0 +1,44 @@
+/*
+ * Tokens del sistema de diseño ChambaReady (validados en los mockups).
+ * Usa SIEMPRE estas variables; no escribas colores sueltos en los componentes.
+ */
+:root {
+  /* Empresa */
+  --cr-azul: #0f2d40;
+  --cr-azul-tinte: #dce6ed;
+  --cr-fondo: #f4f6f8;
+  --cr-menu: #0f2d40;
+  --cr-menu-activo: #1e4d6b;
+
+  /* Verde: CTA de venta (resalta sobre el azul marino) y estados positivos */
+  --cr-verde: #1a7a4a;
+  --cr-verde-texto: #145f3a;
+  --cr-verde-tinte: #e7f3ec;
+
+  /* Neutros */
+  --cr-texto: #14212b;
+  --cr-texto-2: #51606b;
+  --cr-borde: #dce3e8;
+  --cr-superficie: #ffffff;
+
+  /* Avisos (solo para avisos) */
+  --cr-ambar-texto: #8a4f00;
+  --cr-ambar-fondo: #fff1da;
+  --cr-rojo-texto: #9b1c1c;
+  --cr-rojo-fondo: #fde8e6;
+
+  /* Sellos */
+  --cr-sello-confirmado: #1a7a4a;
+  --cr-sello-declarado: #6c8ca3;
+  --cr-sello-no-cumple: #d3dae0;
+
+  /* Forma */
+  --cr-radio-tarjeta: 16px;
+  --cr-radio-boton: 12px;
+  --cr-alto-boton: 46px;
+  --cr-ancho-menu: 248px;
+
+  /* Tipografía */
+  --cr-fuente: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cr-fuente-codigo: "JetBrains Mono", ui-monospace, monospace;
+}
