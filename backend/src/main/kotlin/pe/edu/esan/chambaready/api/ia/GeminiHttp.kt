@@ -1,6 +1,7 @@
 package pe.edu.esan.chambaready.api.ia
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -41,16 +42,23 @@ class GeminiHttp(
             .header("x-goog-api-key", apiKey)
             .POST(HttpRequest.BodyPublishers.ofString(cuerpo(pedido).toString()))
             .build()
-        val respuesta = try {
-            cliente.send(solicitud, HttpResponse.BodyHandlers.ofString())
-        } catch (e: java.io.IOException) {
-            throw ErrorIa("No hubo conexión con Gemini.", e)
+        var respuesta = enviar(solicitud)
+        // 429 (demasiados pedidos) y 503 (sobrecargado) suelen ser momentáneos: se reintenta una vez.
+        if (respuesta.statusCode() in CODIGOS_TEMPORALES) {
+            delay(ESPERA_REINTENTO_MS)
+            respuesta = enviar(solicitud)
         }
         if (respuesta.statusCode() != 200) {
             // No se incluye el cuerpo completo: podría repetir partes del pedido (datos del CV).
             throw ErrorIa("Gemini respondió ${respuesta.statusCode()}.")
         }
         leerRespuesta(respuesta.body())
+    }
+
+    private fun enviar(solicitud: HttpRequest): HttpResponse<String> = try {
+        cliente.send(solicitud, HttpResponse.BodyHandlers.ofString())
+    } catch (e: java.io.IOException) {
+        throw ErrorIa("No hubo conexión con Gemini.", e)
     }
 
     /** Arma el JSON del pedido: instrucciones, contenido y el esquema de la respuesta. */
@@ -111,5 +119,7 @@ class GeminiHttp(
 
     private companion object {
         const val URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+        val CODIGOS_TEMPORALES = setOf(429, 503)
+        const val ESPERA_REINTENTO_MS = 2_000L
     }
 }

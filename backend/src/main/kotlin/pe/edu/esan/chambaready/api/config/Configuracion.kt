@@ -39,8 +39,8 @@ data class Configuracion(
     val geminiApiKey: String? = null,
     /** Modelo para leer CVs. */
     val geminiModelo: String = "gemini-3.5-flash-lite",
-    /** Modelo más barato para preguntas cortas. */
-    val geminiModeloSimple: String = "gemini-2.5-flash-lite",
+    /** Modelo para preguntas cortas (gemini-2.5-flash-lite ya no está disponible para cuentas nuevas). */
+    val geminiModeloSimple: String = "gemini-3.5-flash-lite",
 ) {
     companion object {
         fun desdeEntorno(entorno: Map<String, String> = System.getenv()): Configuracion {
@@ -58,7 +58,7 @@ data class Configuracion(
                 firebaseCredencialesJson = entorno["FIREBASE_CREDENCIALES_JSON"]?.takeIf { it.isNotBlank() },
                 geminiApiKey = entorno["GEMINI_API_KEY"]?.takeIf { it.isNotBlank() },
                 geminiModelo = entorno["GEMINI_MODEL"]?.takeIf { it.isNotBlank() } ?: "gemini-3.5-flash-lite",
-                geminiModeloSimple = entorno["GEMINI_MODEL_SIMPLE"]?.takeIf { it.isNotBlank() } ?: "gemini-2.5-flash-lite",
+                geminiModeloSimple = entorno["GEMINI_MODEL_SIMPLE"]?.takeIf { it.isNotBlank() } ?: "gemini-3.5-flash-lite",
             )
         }
 
