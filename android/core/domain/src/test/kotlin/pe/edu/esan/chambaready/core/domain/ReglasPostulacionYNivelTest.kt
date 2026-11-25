@@ -63,4 +63,18 @@ class ReglasPostulacionYNivelTest {
     fun miniTest_rechazaResultadoImposible() {
         ReglasNivel.miniTestAprobado(4)
     }
+
+    @Test
+    fun miniTest_compruebaElNivelDeclarado() {
+        // Declaró Intermedio y aún no demostró nada: se le pregunta de Intermedio (no de Básico).
+        assertEquals(NivelHabilidad.INTERMEDIO, ReglasNivel.nivelDelMiniTest(NivelHabilidad.INTERMEDIO, NivelHabilidad.NO_LO_HE_USADO))
+        assertEquals(NivelHabilidad.AVANZADO, ReglasNivel.nivelDelMiniTest(NivelHabilidad.AVANZADO, NivelHabilidad.BASICO))
+    }
+
+    @Test
+    fun miniTest_siYaDemostroLoDeclaradoOfreceElSiguiente() {
+        assertEquals(NivelHabilidad.AVANZADO, ReglasNivel.nivelDelMiniTest(NivelHabilidad.INTERMEDIO, NivelHabilidad.INTERMEDIO))
+        assertEquals(NivelHabilidad.BASICO, ReglasNivel.nivelDelMiniTest(NivelHabilidad.NO_LO_SE, NivelHabilidad.NO_LO_HE_USADO))
+        assertEquals(NivelHabilidad.AVANZADO, ReglasNivel.nivelDelMiniTest(NivelHabilidad.BASICO, NivelHabilidad.AVANZADO))
+    }
 }

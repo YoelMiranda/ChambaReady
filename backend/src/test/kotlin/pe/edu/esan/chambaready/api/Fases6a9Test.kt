@@ -268,6 +268,16 @@ class Fases6a9Test {
     }
 
     @Test
+    fun miniTest_preguntaDelNivelDeclarado() = conApi { cliente, _ ->
+        cliente.put("/v1/yo/perfil") {
+            como("p1", "PRACTICANTE")
+            contentType(ContentType.Application.Json)
+            setBody(pe.edu.esan.chambaready.api.dto.ActualizarPerfilDto(nivelesDeclarados = mapOf("sql" to "INTERMEDIO")))
+        }
+        assertEquals("INTERMEDIO", cliente.getComo("p1", "PRACTICANTE", "/v1/yo/mini-tests/sql").body<MiniTestDto>().nivel)
+    }
+
+    @Test
     fun miniTest_seGeneraUnaSolaVezPorNivel() {
         val ia = IaFalsa()
         conApi(ia) { cliente, _ ->

@@ -444,14 +444,16 @@ class ServicioPracticante(
     // ---------- F6: mini-test (P15/P16), corregido en el servidor ----------
 
     /**
-     * 3 preguntas para subir al siguiente nivel de la habilidad. Se generan una vez por habilidad y
+     * 3 preguntas para comprobar el nivel DECLARADO de la habilidad (o el siguiente, si ya lo demostró). Se generan una vez por habilidad y
      * nivel (y se guardan), así no se paga a Gemini cada vez. Nunca incluyen la respuesta.
      */
     suspend fun miniTest(usuarioId: String, habilidadId: String): MiniTestDto {
         val (nombre, nivel, guardado) = bd.tx {
             val habilidad = Habilidades.selectAll().where { Habilidades.id eq habilidadId }.singleOrNull()
                 ?: throw ErrorApi.NoEncontrado("Esta habilidad no existe.")
-            val nivel = siguienteNivel(Consultas.niveles(usuarioId).demostrado(habilidadId))
+            val niveles = Consultas.niveles(usuarioId)
+            // Comprueba el nivel que el estudiante declaró (o el siguiente, si ya lo demostró).
+            val nivel = ReglasNivel.nivelDelMiniTest(niveles.declarado(habilidadId), niveles.demostrado(habilidadId))
             Triple(habilidad[Habilidades.nombre], nivel, ultimoMiniTest(habilidadId, nivel))
         }
         val test = guardado ?: run {
@@ -459,12 +461,6 @@ class ServicioPracticante(
             bd.tx { ultimoMiniTest(habilidadId, nivel) ?: guardarMiniTest(habilidadId, nivel, preguntas) }
         }
         return MiniTestDto(test.first, habilidadId, nombre, nivel.name, test.second.map { PreguntaDto(it.enunciado, it.opciones) })
-    }
-
-    private fun siguienteNivel(actual: NivelHabilidad): NivelHabilidad = when (actual) {
-        NivelHabilidad.BASICO -> NivelHabilidad.INTERMEDIO
-        NivelHabilidad.INTERMEDIO, NivelHabilidad.AVANZADO -> NivelHabilidad.AVANZADO
-        else -> NivelHabilidad.BASICO
     }
 
     private fun ultimoMiniTest(habilidadId: String, nivel: NivelHabilidad): Pair<String, List<PreguntaIa>>? =

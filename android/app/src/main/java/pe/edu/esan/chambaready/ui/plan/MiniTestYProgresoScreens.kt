@@ -109,9 +109,12 @@ class MiniTestViewModel @Inject constructor(
         val correctas = estado.preguntas.count { it.esCorrecta(estado.respuestas[it.id]) }
         viewModelScope.launch {
             val vacante = vacantes.obtenerVacante(vacanteId)
-            val nivelDelModulo = vacante?.requisitos?.firstOrNull { it.habilidadId == moduloId }?.nivelExigido ?: NivelHabilidad.BASICO
+            val exigido = vacante?.requisitos?.firstOrNull { it.habilidadId == moduloId }?.nivelExigido ?: NivelHabilidad.BASICO
             estadoRepositorio.actualizar { e ->
                 val antes = e.nivelesEfectivos.demostrado(moduloId)
+                // Comprueba el nivel declarado (o el siguiente); nunca menos de lo que pide la vacante.
+                val delTest = ReglasNivel.nivelDelMiniTest(e.niveles.declarado(moduloId), antes)
+                val nivelDelModulo = if (delTest.valor >= exigido.valor) delTest else exigido
                 val despues = ReglasNivel.trasMiniTest(antes, nivelDelModulo, correctas)
                 e.copy(
                     niveles = e.niveles.copy(demostrados = e.niveles.demostrados + (moduloId to despues)),

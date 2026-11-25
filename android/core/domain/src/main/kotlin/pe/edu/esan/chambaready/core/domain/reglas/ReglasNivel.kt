@@ -22,6 +22,20 @@ object ReglasNivel {
     fun trasMiniTest(actual: NivelHabilidad, nivelDelModulo: NivelHabilidad, correctas: Int): NivelHabilidad =
         if (miniTestAprobado(correctas)) mayor(actual, nivelDelModulo) else actual
 
+    /**
+     * Nivel que comprueba el mini-test: el que el estudiante DECLARÓ, si todavía no lo demostró.
+     * Si ya lo demostró (o declaró menos de lo demostrado), se le ofrece el siguiente nivel.
+     * Ejemplo: declaró Intermedio y no demostró nada → preguntas de nivel Intermedio.
+     */
+    fun nivelDelMiniTest(declarado: NivelHabilidad, demostrado: NivelHabilidad): NivelHabilidad {
+        val siguiente = when (demostrado) {
+            NivelHabilidad.BASICO -> NivelHabilidad.INTERMEDIO
+            NivelHabilidad.INTERMEDIO, NivelHabilidad.AVANZADO -> NivelHabilidad.AVANZADO
+            NivelHabilidad.NO_LO_HE_USADO, NivelHabilidad.NO_LO_SE -> NivelHabilidad.BASICO
+        }
+        return if (declarado.valor > demostrado.valor) declarado else siguiente
+    }
+
     fun trasEvidencia(actual: NivelHabilidad, nivelDeLaEvidencia: NivelHabilidad, estado: EstadoEvidencia): NivelHabilidad =
         if (estado == EstadoEvidencia.VALIDADA) mayor(actual, nivelDeLaEvidencia) else actual
 

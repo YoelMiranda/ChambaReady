@@ -83,8 +83,9 @@ data class AsistenteUiState(
 }
 
 /**
- * P02 Asistente de perfil. En F2 es un guion fijo con las habilidades "leídas" del CV de prueba;
- * en F6 las preguntas las genera Gemini a partir del CV real. Solo pregunta lo que falta.
+ * P02 Asistente de perfil. Si el CV se leyó (con IA en el backend, o el de prueba en modo demo),
+ * completa el perfil solo y no pregunta nada: el estudiante corrige en P03. Sin CV, pregunta el
+ * nivel de cada habilidad.
  */
 @HiltViewModel
 class AsistentePerfilViewModel @Inject constructor(
@@ -103,15 +104,37 @@ class AsistentePerfilViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val estado = estadoRepositorio.estado.first()
-            val sugeridas = analisis?.habilidades.orEmpty()
-            val introduccion = if (sugeridas.isNotEmpty()) {
-                "Leí tu CV. Encontré ${sugeridas.size} habilidades: " +
-                    habilidades.filter { it.id in sugeridas }.joinToString { "${it.nombre} (${sugeridas.getValue(it.id).etiqueta.lowercase()})" } +
-                    ". Confírmame tu nivel en cada una."
-            } else if (estado.cvNombre != null) {
-                "Leí tu CV «${estado.cvNombre}». Encontré ${habilidades.size} habilidades. Te pregunto solo lo que falta."
-            } else {
-                "Vamos a armar tu perfil. Te haré algunas preguntas cortas sobre ${habilidades.size} habilidades comunes."
+            // Con CV, el perfil se completa solo con lo que se leyó y NO se vuelve a preguntar: el
+            // estudiante revisa y corrige en P03. Solo se pregunta si del CV no salió nada.
+            val detectadas = analisis?.habilidades.orEmpty()
+            val delCv: Map<String, NivelHabilidad> = when {
+                // Con backend: lo que detectó la IA, con el nivel que sugiere.
+                detectadas.isNotEmpty() -> detectadas
+                // Modo demo con CV: las habilidades de prueba, en nivel básico.
+                analisis == null && estado.cvNombre != null -> habilidades.associate { it.id to NivelHabilidad.BASICO }
+                else -> emptyMap()
+            }
+            if (delCv.isNotEmpty()) {
+                niveles.putAll(delCv)
+                val resumen = habilidades.filter { it.id in delCv }
+                    .joinToString { "${it.nombre} (${delCv.getValue(it.id).etiqueta.lowercase()})" }
+                setState {
+                    copy(
+                        mensajes = listOf(
+                            MensajeChat(AutorMensaje.IA, "Leí tu CV y completé tu perfil con ${delCv.size} habilidades: $resumen."),
+                            MensajeChat(AutorMensaje.IA, "En el siguiente paso puedes corregir cualquier nivel."),
+                        ),
+                        total = delCv.size,
+                        respondidas = delCv.size,
+                        pregunta = null,
+                        tieneCv = true,
+                    )
+                }
+                return@launch
+            }
+            val introduccion = when {
+                estado.cvNombre != null -> "Guardé tu CV, pero no encontré habilidades del catálogo. Te hago unas preguntas cortas sobre ${habilidades.size} habilidades."
+                else -> "Vamos a armar tu perfil. Te haré algunas preguntas cortas sobre ${habilidades.size} habilidades comunes."
             }
             setState {
                 copy(
