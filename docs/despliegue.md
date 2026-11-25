@@ -94,7 +94,7 @@ CV solo para archivos Word. Para activar la IA real:
 ## 4. Correr la API en tu computadora
 
 1. Copia `backend/.env.example` como `backend/.env` y pon la cadena de tu rama `desarrollo` de Neon. Para probar sin login, usa `MODO_DESARROLLO=true` y `CARGAR_DATOS_DEMO=true`. Con las variables de Firebase además acepta tokens reales (primero intenta el token y, si no hay, los encabezados de prueba).
-2. En Git Bash, dentro de `backend/`:
+2. En **PowerShell**, dentro de `backend/`: `.\correr.ps1` (carga el `.env` y arranca). O en **Git Bash**, dentro de `backend/`:
 
 ```bash
 set -a; source .env; set +a; ./gradlew run

@@ -116,6 +116,7 @@ class Fases6a9Test {
             if (falla) throw ErrorIa("Sin conexión (simulado)")
             val json = when (pedido.operacion) {
                 "LEER_CV" -> """{"habilidades": [{"habilidad": "SQL", "nivel": "INTERMEDIO"}, {"habilidad": "Brujería", "nivel": "AVANZADO"}], "proyectos": ["Tablero de ventas"]}"""
+                "ASISTENTE" -> """{"respuesta": "Anotado: Excel avanzado.", "habilidades": [{"habilidad": "Excel", "nivel": "AVANZADO"}, {"habilidad": "Cocina", "nivel": "AVANZADO"}]}"""
                 else -> PREGUNTAS_IA
             }
             return RespuestaIa(json, tokensEntrada = 1000, tokensSalida = 200)
@@ -451,5 +452,84 @@ class Fases6a9Test {
         assertEquals(1, metricas.eventos30Dias["VACANTE_PUBLICADA"])
         assertEquals(1, metricas.eventos30Dias["POSTULACION"])
         assertEquals(HttpStatusCode.NotFound, cliente.get("/v1/admin/metricas").status)
+    }
+
+    // ---------- Evaluación de habilidades y asistente ----------
+
+    private suspend fun HttpClient.declarar(uid: String, niveles: Map<String, String>) = put("/v1/yo/perfil") {
+        como(uid, "PRACTICANTE")
+        contentType(ContentType.Application.Json)
+        setBody(pe.edu.esan.chambaready.api.dto.ActualizarPerfilDto(nivelesDeclarados = niveles))
+    }
+
+    @Test
+    fun evaluacion_alNivelDeclarado_yGratisUnaSolaVez() = conApi { cliente, _ ->
+        cliente.declarar("p1", mapOf("sql" to "INTERMEDIO", "equipo" to "BASICO"))
+        assertTrue(cliente.getComo("p1", "PRACTICANTE", "/v1/yo/evaluacion").body<pe.edu.esan.chambaready.api.dto.EstadoEvaluacionDto>().puedeEvaluar)
+
+        val evaluacion = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/evaluacion", pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto(listOf("sql", "equipo")))
+            .body<pe.edu.esan.chambaready.api.dto.EvaluacionDto>()
+        assertEquals(listOf("INTERMEDIO", "BASICO"), evaluacion.pruebas.map { it.nivel })
+        assertTrue(evaluacion.pruebas.all { it.preguntas.size == 3 })
+
+        // Gratis: una sola vez.
+        val otra = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/evaluacion", pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto(listOf("sql")))
+        assertEquals(HttpStatusCode.UnprocessableEntity, otra.status)
+        assertFalse(cliente.getComo("p1", "PRACTICANTE", "/v1/yo/evaluacion").body<pe.edu.esan.chambaready.api.dto.EstadoEvaluacionDto>().puedeEvaluar)
+        // Con Premium, sin límite.
+        cliente.postComo("p1", "PRACTICANTE", "/v1/yo/premium/pago-simulado")
+        assertEquals(HttpStatusCode.OK, cliente.postComo("p1", "PRACTICANTE", "/v1/yo/evaluacion", pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto(listOf("sql"))).status)
+    }
+
+    @Test
+    fun evaluacion_soloDeHabilidadesDeclaradas() = conApi { cliente, _ ->
+        cliente.declarar("p1", mapOf("sql" to "BASICO"))
+        val r = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/evaluacion", pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto(listOf("python")))
+        assertEquals(HttpStatusCode.BadRequest, r.status)
+        val muchas = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/evaluacion", pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto(listOf("a", "b", "c", "d", "e")))
+        assertEquals(HttpStatusCode.BadRequest, muchas.status)
+    }
+
+    @Test
+    fun aprobarLaEvaluacion_confirmaElSelloAlPostular() = conApi(IaFalsa()) { cliente, _ ->
+        val v = cliente.empresaConVacante()
+        cliente.declarar("p1", mapOf("sql" to "INTERMEDIO"))
+        val prueba = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/evaluacion", pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto(listOf("sql")))
+            .body<pe.edu.esan.chambaready.api.dto.EvaluacionDto>().pruebas.single()
+        // La IA falsa siempre pone la correcta en la opción 0.
+        cliente.postComo("p1", "PRACTICANTE", "/v1/yo/mini-tests/${prueba.id}/respuestas", ResponderMiniTestDto(listOf(0, 0, 0)))
+        val postulacion = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/postulaciones", PostularDto(v.id, declaracionJurada = true)).body<PostulacionDto>()
+        val sql = v.requisitos.first { it.habilidad == "SQL" }
+        assertEquals("CONFIRMADO", postulacion.sellos[sql.id], "SQL intermedio demostrado: de Declarado pasa a Confirmado")
+    }
+
+    @Test
+    fun quienRepiteElMiniTest_recibePreguntasNuevas() {
+        val ia = IaFalsa()
+        conApi(ia) { cliente, _ ->
+            val primero = cliente.getComo("p1", "PRACTICANTE", "/v1/yo/mini-tests/excel").body<MiniTestDto>()
+            cliente.postComo("p1", "PRACTICANTE", "/v1/yo/mini-tests/${primero.id}/respuestas", ResponderMiniTestDto(listOf(1, 1, 1)))
+            val segundo = cliente.getComo("p1", "PRACTICANTE", "/v1/yo/mini-tests/excel").body<MiniTestDto>()
+            assertTrue(primero.id != segundo.id)
+            assertEquals(2, ia.llamadas)
+        }
+    }
+
+    @Test
+    fun asistente_sinIa_entiendeHabilidadesYNivel() = conApi { cliente, _ ->
+        val r = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/asistente", pe.edu.esan.chambaready.api.dto.MensajeAsistenteDto("También sé Excel intermedio y algo de Python"))
+            .body<pe.edu.esan.chambaready.api.dto.RespuestaAsistenteDto>()
+        assertFalse(r.conIa)
+        assertEquals(setOf("excel", "python"), r.habilidades.map { it.habilidadId }.toSet())
+        assertTrue(r.habilidades.all { it.nivel == "INTERMEDIO" })
+    }
+
+    @Test
+    fun asistente_conIa_soloHabilidadesDelCatalogo() = conApi(IaFalsa()) { cliente, _ ->
+        val r = cliente.postComo("p1", "PRACTICANTE", "/v1/yo/asistente", pe.edu.esan.chambaready.api.dto.MensajeAsistenteDto("Sé Excel avanzado y cocina"))
+            .body<pe.edu.esan.chambaready.api.dto.RespuestaAsistenteDto>()
+        assertTrue(r.conIa)
+        assertEquals(listOf("excel" to "AVANZADO"), r.habilidades.map { it.habilidadId to it.nivel })
+        assertEquals("Anotado: Excel avanzado.", r.respuesta)
     }
 }

@@ -2,6 +2,7 @@ package pe.edu.esan.chambaready.ui.registro
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,13 +12,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -29,9 +38,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import pe.edu.esan.chambaready.core.data.remoto.CuentaRepository
 import pe.edu.esan.chambaready.core.data.remoto.CvSesion
+import pe.edu.esan.chambaready.core.data.remoto.ErrorRemoto
+import pe.edu.esan.chambaready.core.data.remoto.RespuestaAsistente
 import pe.edu.esan.chambaready.core.data.repositorio.ContenidoRepository
 import pe.edu.esan.chambaready.core.data.repositorio.EstadoUsuarioRepository
 import pe.edu.esan.chambaready.core.designsystem.componentes.ChipSelector
@@ -71,6 +84,8 @@ data class AsistenteUiState(
     val respondidas: Int = 0,
     val total: Int = 1,
     val tieneCv: Boolean = false,
+    /** Esperando la respuesta del asistente a un mensaje escrito. */
+    val escribiendo: Boolean = false,
 ) {
     val terminado: Boolean get() = pregunta == null && respondidas >= total
 
@@ -90,7 +105,8 @@ data class AsistenteUiState(
 @HiltViewModel
 class AsistentePerfilViewModel @Inject constructor(
     private val estadoRepositorio: EstadoUsuarioRepository,
-    contenido: ContenidoRepository,
+    private val contenido: ContenidoRepository,
+    private val cuenta: CuentaRepository,
     cvSesion: CvSesion,
 ) : BaseViewModel<AsistenteUiState, Nothing>(AsistenteUiState()) {
 
@@ -204,6 +220,57 @@ class AsistentePerfilViewModel @Inject constructor(
         preguntarNivel(habilidades.indexOf(actual) + 1)
     }
 
+    /**
+     * Chat libre: el estudiante agrega habilidades que no estaban en su CV o aclara algo
+     * ("también sé Excel intermedio"). Con backend lo entiende la IA; en modo demo, la app busca
+     * los nombres de las habilidades y una palabra de nivel en el texto.
+     */
+    fun conversar(texto: String) {
+        val mensaje = texto.trim()
+        if (mensaje.isEmpty() || currentState.escribiendo) return
+        setState { copy(mensajes = mensajes + MensajeChat(AutorMensaje.USUARIO, mensaje), escribiendo = true) }
+        viewModelScope.launch {
+            val respuesta = try {
+                cuenta.conversarAsistente(mensaje, niveles.toMap()) ?: interpretarSinIa(mensaje)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ErrorRemoto) {
+                RespuestaAsistente(e.message ?: "No pude responder ahora. Inténtalo otra vez.", emptyMap())
+            }
+            niveles.putAll(respuesta.habilidades)
+            setState {
+                copy(
+                    mensajes = mensajes + MensajeChat(AutorMensaje.IA, respuesta.respuesta),
+                    escribiendo = false,
+                    total = maxOf(total, niveles.size),
+                    respondidas = maxOf(respondidas, niveles.size),
+                )
+            }
+        }
+    }
+
+    private fun interpretarSinIa(mensaje: String): RespuestaAsistente {
+        val texto = sinTildes(mensaje)
+        val nivel = when {
+            "avanzad" in texto -> NivelHabilidad.AVANZADO
+            "intermedi" in texto -> NivelHabilidad.INTERMEDIO
+            else -> NivelHabilidad.BASICO
+        }
+        val conocidas = (habilidades + contenido.habilidadesDetectadasEnCv()).distinctBy { it.id }
+        val encontradas = conocidas.filter { Regex("\\b${Regex.escape(sinTildes(it.nombre))}\\b").containsMatchIn(texto) }
+        return if (encontradas.isEmpty()) {
+            RespuestaAsistente("No reconocí habilidades en tu mensaje. Prueba así: «Sé Excel intermedio».", emptyMap())
+        } else {
+            RespuestaAsistente(
+                "Anoté: " + encontradas.joinToString { "${it.nombre} (${nivel.etiqueta.lowercase()})" } + ". Puedes corregirlo en el siguiente paso.",
+                encontradas.associate { it.id to nivel },
+            )
+        }
+    }
+
+    private fun sinTildes(texto: String): String =
+        java.text.Normalizer.normalize(texto.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}"), "")
+
     fun terminar(alTerminar: () -> Unit) {
         viewModelScope.launch {
             estadoRepositorio.actualizar { estado ->
@@ -230,6 +297,7 @@ fun AsistentePerfilScreen(
         onNivel = viewModel::responderNivel,
         onEvidencia = viewModel::responderEvidencia,
         onTerminar = { viewModel.terminar(onTerminar) },
+        onEnviarMensaje = viewModel::conversar,
     )
 }
 
@@ -240,8 +308,10 @@ fun AsistentePerfilContenido(
     onNivel: (NivelHabilidad) -> Unit,
     onEvidencia: (RespuestaEvidencia) -> Unit,
     onTerminar: () -> Unit,
+    onEnviarMensaje: (String) -> Unit = {},
 ) {
     val lista = rememberLazyListState()
+    var texto by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(estado.mensajes.size) {
         if (estado.mensajes.isNotEmpty()) lista.animateScrollToItem(estado.mensajes.size + 1)
     }
@@ -263,7 +333,35 @@ fun AsistentePerfilContenido(
                         onClick = onEvidencia,
                         etiqueta = { it.etiqueta },
                     )
-                    null -> PrimaryButton("Ver mi perfil", onClick = onTerminar, enabled = estado.terminado, modifier = Modifier.fillMaxWidth())
+                    null -> Column {
+                        // Después del CV (o de las preguntas) se puede seguir conversando: agregar
+                        // habilidades que no estaban o aclarar algo que el CV no dejaba claro.
+                        OutlinedTextField(
+                            value = texto,
+                            onValueChange = { texto = it },
+                            placeholder = { Text("Agrega otra habilidad o aclara algo (ej.: «Sé Excel intermedio»)") },
+                            enabled = !estado.escribiendo,
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = {
+                                        onEnviarMensaje(texto)
+                                        texto = ""
+                                    },
+                                    enabled = texto.isNotBlank() && !estado.escribiendo,
+                                ) {
+                                    Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Enviar mensaje")
+                                }
+                            },
+                            shape = MaterialTheme.shapes.medium,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        PrimaryButton(
+                            "Ver mi perfil",
+                            onClick = onTerminar,
+                            enabled = estado.terminado && !estado.escribiendo,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        )
+                    }
                 }
             }
         },

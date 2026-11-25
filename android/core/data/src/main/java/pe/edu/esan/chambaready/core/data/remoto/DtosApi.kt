@@ -159,3 +159,15 @@ data class NotificacionDto(
     /** Instante ISO-8601 (por ejemplo 2026-11-24T13:00:00Z). */
     val fecha: String,
 )
+
+// ---------- Evaluación de habilidades y asistente ----------
+@Serializable data class IniciarEvaluacionDto(val habilidades: List<String>)
+
+@Serializable data class EvaluacionDto(val id: String, val pruebas: List<MiniTestDto>)
+
+@Serializable data class EstadoEvaluacionDto(val puedeEvaluar: Boolean, val usadas: Int = 0, val premium: Boolean = false)
+
+@Serializable data class MensajeAsistenteDto(val mensaje: String, val habilidades: Map<String, String> = emptyMap())
+
+@Serializable
+data class RespuestaAsistenteDto(val respuesta: String, val habilidades: List<HabilidadDetectadaDto> = emptyList(), val conIa: Boolean = false)

@@ -5,7 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import pe.edu.esan.chambaready.ui.auth.IniciarSesionScreen
-import pe.edu.esan.chambaready.ui.autoevaluacion.AutoevaluacionScreen
+import pe.edu.esan.chambaready.ui.autoevaluacion.EvaluacionHabilidadesScreen
 import pe.edu.esan.chambaready.ui.autoevaluacion.ResultadoAutoevaluacionScreen
 import pe.edu.esan.chambaready.ui.bienvenida.BienvenidaScreen
 import pe.edu.esan.chambaready.ui.catalogo.CatalogoComponentesScreen
@@ -81,7 +81,14 @@ fun NavGraphBuilder.grafoRegistro(
         )
     }
     composable<NavRoutes.Autoevaluacion> {
-        AutoevaluacionScreen(onBack = volver, onTerminar = { navController.navigate(NavRoutes.ResultadoAutoevaluacion) })
+        // P05: evaluación de habilidades al nivel declarado. Se puede saltar y hacer luego desde Perfil.
+        EvaluacionHabilidadesScreen(
+            desdeRegistro = true,
+            onBack = volver,
+            onTerminar = { navController.navigate(NavRoutes.ResultadoAutoevaluacion) },
+            onSaltar = { navController.navigate(NavRoutes.ResultadoAutoevaluacion) },
+            onPremium = { navController.navigate(NavRoutes.Premium()) },
+        )
     }
     composable<NavRoutes.ResultadoAutoevaluacion> {
         ResultadoAutoevaluacionScreen(onBack = volver, onIrAlInicio = onEntrarALaApp)

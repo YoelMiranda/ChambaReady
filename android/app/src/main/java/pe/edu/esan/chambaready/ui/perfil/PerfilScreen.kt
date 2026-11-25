@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Interests
+import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WorkspacePremium
@@ -107,6 +108,7 @@ fun PerfilScreen(
     onArea: () -> Unit,
     onTiempoLibre: () -> Unit,
     onSesionCerrada: () -> Unit,
+    onEvaluar: () -> Unit = {},
     viewModel: PerfilViewModel = hiltViewModel(),
 ) {
     val estado by viewModel.uiState.collectAsStateWithLifecycle()
@@ -117,6 +119,7 @@ fun PerfilScreen(
         onEvidencias = onEvidencias,
         onArea = onArea,
         onTiempoLibre = onTiempoLibre,
+        onEvaluar = onEvaluar,
         onCambiarAviso = viewModel::cambiarAviso,
         onCerrarSesion = { viewModel.cerrarSesion(onSesionCerrada) },
     )
@@ -132,6 +135,7 @@ fun PerfilContenido(
     onTiempoLibre: () -> Unit,
     onCambiarAviso: (TipoNotificacion, Boolean) -> Unit,
     onCerrarSesion: () -> Unit,
+    onEvaluar: () -> Unit = {},
 ) {
     var confirmarSalida by remember { mutableStateOf(false) }
     Surface(color = MaterialTheme.colorScheme.background) {
@@ -156,6 +160,9 @@ fun PerfilContenido(
             }
             TarjetaSeccion {
                 Opcion(Icons.Outlined.Edit, "Editar datos y habilidades", if (estado.premium) null else "Premium", onEditarDatos)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                // Comprobar habilidades: de "Declarado" a "Confirmado". Gratis: una vez.
+                Opcion(Icons.Outlined.Quiz, "Evaluar mis habilidades", if (estado.premium) null else "1 vez gratis", onEvaluar)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 Opcion(Icons.Outlined.Verified, "Mis evidencias", "${estado.evidencias}", onEvidencias)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)

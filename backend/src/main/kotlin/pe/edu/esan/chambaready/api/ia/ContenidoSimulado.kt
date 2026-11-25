@@ -89,6 +89,26 @@ object ContenidoSimulado {
     fun preguntasFiltro(requisitos: List<Pair<String, String>>): List<PreguntaIa> =
         requisitos.take(2).map { (habilidadId, nombre) -> (banco[habilidadId] ?: genericas(nombre)).first() }
 
+    /**
+     * Asistente sin IA: busca nombres del catálogo en el mensaje y una palabra de nivel
+     * ("básico", "intermedio", "avanzado"). Ejemplo: «Sé Excel intermedio y algo de Python».
+     */
+    fun asistente(mensaje: String, catalogo: Map<String, String>): RespuestaAsistente {
+        val texto = Textos.normalizar(mensaje)
+        val nivel = when {
+            "avanzad" in texto -> "AVANZADO"
+            "intermedi" in texto -> "INTERMEDIO"
+            else -> "BASICO"
+        }
+        val encontradas = Textos.habilidadesEnTexto(mensaje, catalogo).map { it.copy(nivel = nivel) }
+        val respuesta = if (encontradas.isEmpty()) {
+            "No reconocí habilidades del catálogo en tu mensaje. Prueba así: «Sé Excel intermedio»."
+        } else {
+            "Anoté: " + encontradas.joinToString { "${it.nombre} (${it.nivel.lowercase()})" } + ". Puedes corregir el nivel en el siguiente paso."
+        }
+        return RespuestaAsistente(respuesta, encontradas)
+    }
+
     /** Sin IA y con un PDF no se puede leer el texto: no se detecta nada y el usuario completa P03 a mano. */
     val cvVacio = CvLeido(emptyList(), emptyList())
 }

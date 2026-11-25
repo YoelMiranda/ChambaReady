@@ -7,7 +7,7 @@ import {
   signOut,
   updateProfile,
 } from "@firebase/auth";
-import { pedir } from "../api/http";
+import { ErrorApi, pedir } from "../api/http";
 import { auth, usaApiReal } from "./firebase";
 
 /**
@@ -20,7 +20,8 @@ import { auth, usaApiReal } from "./firebase";
 export type EstadoSesion =
   | { tipo: "demo" }
   | { tipo: "cargando" }
-  | { tipo: "anonimo" }
+  /** [aviso]: por qué se volvió al login (por ejemplo, el backend no responde). */
+  | { tipo: "anonimo"; aviso?: string }
   | { tipo: "empresa"; correo: string }
   | { tipo: "otroRol"; correo: string };
 
@@ -37,6 +38,14 @@ const Contexto = createContext<ContextoSesion | null>(null);
 interface SesionApi {
   registrado: boolean;
   rol: string | null;
+}
+
+/** Mensaje cuando Firebase aceptó la cuenta pero el backend no pudo confirmar el rol. */
+export function mensajeSinServidor(error: unknown): string {
+  if (error instanceof ErrorApi && error.estado === 0) {
+    return "Tu correo y contraseña son correctos, pero no pudimos conectar con el servidor de ChambaReady. Revisa que el backend esté encendido e inténtalo otra vez.";
+  }
+  return error instanceof Error && error.message ? error.message : "No pudimos confirmar tu cuenta. Inténtalo otra vez.";
 }
 
 /** Mensajes en español para los errores más comunes de Firebase Auth. */
@@ -76,9 +85,11 @@ export function SesionProvider({ children }: { children: ReactNode }) {
         } else {
           setEstado(sesion.rol === "EMPRESA" ? { tipo: "empresa", correo } : { tipo: "otroRol", correo });
         }
-      } catch {
-        // Sin backend no se puede confirmar el rol: se vuelve al login.
-        setEstado({ tipo: "anonimo" });
+      } catch (e) {
+        // Sin backend no se puede confirmar el rol: se cierra la sesión de Firebase (para poder
+        // reintentar) y se vuelve al login CON el motivo, en vez de no mostrar nada.
+        if (auth) await signOut(auth).catch(() => undefined);
+        setEstado({ tipo: "anonimo", aviso: mensajeSinServidor(e) });
       }
     });
   }, []);

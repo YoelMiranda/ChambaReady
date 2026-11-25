@@ -66,6 +66,18 @@ interface ApiChambaReady {
     @POST("yo/cv")
     suspend fun analizarCv(@Body datos: AnalizarCvDto): CvAnalizadoDto
 
+    /** ¿Puede evaluarse? Con cuenta gratis, una sola vez. */
+    @GET("yo/evaluacion")
+    suspend fun estadoEvaluacion(): EstadoEvaluacionDto
+
+    /** Un mini-test por habilidad elegida (máximo 4), al nivel declarado. */
+    @POST("yo/evaluacion")
+    suspend fun iniciarEvaluacion(@Body datos: IniciarEvaluacionDto): EvaluacionDto
+
+    /** P02: el estudiante agrega o aclara habilidades escribiendo libremente. */
+    @POST("yo/asistente")
+    suspend fun conversarAsistente(@Body datos: MensajeAsistenteDto): RespuestaAsistenteDto
+
     // ---------- F7: archivos ----------
 
     /** Sube el archivo tal cual (el Content-Type va en el RequestBody). El nombre, codificado como URL. */

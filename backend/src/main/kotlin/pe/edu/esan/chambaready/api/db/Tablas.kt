@@ -274,6 +274,15 @@ object IntentosTest : Table("intentos_test") {
     val aprobado = bool("aprobado")
     val nivelAntes = text("nivel_antes")
     val nivelDespues = text("nivel_despues")
+    val miniTestId = text("mini_test_id").nullable()
+    override val primaryKey = PrimaryKey(id)
+}
+
+object EvaluacionesHabilidades : Table("evaluaciones_habilidades") {
+    val id = text("id")
+    val usuarioId = text("usuario_id")
+    val habilidades = text("habilidades")
+    val creadaEn = timestamp("creada_en")
     override val primaryKey = PrimaryKey(id)
 }
 

@@ -86,102 +86,7 @@ fun PreguntaConOpciones(
     }
 }
 
-// ---------- P05 Autoevaluación ----------
-
-data class AutoevaluacionUiState(
-    val area: AreaInteres? = null,
-    val preguntas: List<PreguntaOpcion> = emptyList(),
-    val respuestas: Map<String, Int> = emptyMap(),
-) {
-    val completa: Boolean get() = preguntas.isNotEmpty() && respuestas.size == preguntas.size
-}
-
-/**
- * P05: preguntas del área elegida, con "No lo sé" y sin tiempo límite. El resultado (privado)
- * se guarda y se muestra en P06. En F6 las preguntas las genera Gemini.
- */
-@HiltViewModel
-class AutoevaluacionViewModel @Inject constructor(
-    private val estadoRepositorio: EstadoUsuarioRepository,
-    private val contenido: ContenidoRepository,
-    private val cuenta: CuentaRepository,
-) : BaseViewModel<AutoevaluacionUiState, Nothing>(AutoevaluacionUiState()) {
-
-    init {
-        viewModelScope.launch {
-            val area = estadoRepositorio.estado.first().area ?: AreaInteres.DATA_ANALYTICS
-            setState { copy(area = area, preguntas = contenido.preguntasAutoevaluacion(area)) }
-        }
-    }
-
-    fun responder(preguntaId: String, opcion: Int) = setState { copy(respuestas = respuestas + (preguntaId to opcion)) }
-
-    fun terminar(alTerminar: () -> Unit) {
-        val estado = currentState
-        val area = estado.area ?: return
-        val correctas = estado.preguntas.count { it.esCorrecta(estado.respuestas[it.id]) }
-        viewModelScope.launch {
-            // Ranking privado (regla 5): con backend se compara con todos los del área; sin conexión
-            // o en modo demo, se usa la estimación local.
-            val topDelServidor = try {
-                cuenta.autoevaluacion(area, correctas, estado.preguntas.size)
-            } catch (_: ErrorRemoto) {
-                null
-            }
-            estadoRepositorio.actualizar { e ->
-                val anterior = e.autoevaluacion?.takeIf { it.area == area }?.topPorcentaje
-                e.copy(
-                    autoevaluacion = ResultadoAutoevaluacion(
-                        area = area,
-                        correctas = correctas,
-                        total = estado.preguntas.size,
-                        topPorcentaje = topDelServidor ?: contenido.topPorcentaje(area, correctas, estado.preguntas.size),
-                        topAnterior = anterior,
-                    ),
-                )
-            }
-            alTerminar()
-        }
-    }
-}
-
-@Composable
-fun AutoevaluacionScreen(onBack: () -> Unit, onTerminar: () -> Unit, viewModel: AutoevaluacionViewModel = hiltViewModel()) {
-    val estado by viewModel.uiState.collectAsStateWithLifecycle()
-    AutoevaluacionContenido(estado, onBack, viewModel::responder) { viewModel.terminar(onTerminar) }
-}
-
-@Composable
-fun AutoevaluacionContenido(
-    estado: AutoevaluacionUiState,
-    onBack: () -> Unit,
-    onResponder: (String, Int) -> Unit,
-    onTerminar: () -> Unit,
-) {
-    PantallaBase(
-        titulo = "Autoevaluación",
-        onBack = onBack,
-        barraInferior = {
-            BarraAcciones {
-                PrimaryButton("Ver mi resultado", onClick = onTerminar, enabled = estado.completa, modifier = Modifier.fillMaxWidth())
-            }
-        },
-    ) { padding ->
-        ContenidoDesplazable(padding) {
-            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.large) {
-                Row(Modifier.padding(Dimensiones.espacioGrande), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Spacer(Modifier.width(Dimensiones.espacioChico))
-                    Text("No es un examen; nadie más ve tus respuestas.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            estado.area?.let { Text("Preguntas de ${it.etiqueta}. Tómate tu tiempo.", style = MaterialTheme.typography.bodyMedium, color = ChambaTema.colores.textoSecundario) }
-            estado.preguntas.forEachIndexed { i, pregunta ->
-                PreguntaConOpciones(i + 1, pregunta, estado.respuestas[pregunta.id], { onResponder(pregunta.id, it) })
-            }
-        }
-    }
-}
+// P05 ahora es la evaluación de habilidades: ver EvaluacionHabilidadesScreen.kt.
 
 // ---------- P06 Resultado ----------
 
@@ -254,7 +159,7 @@ fun ResultadoAutoevaluacionContenido(estado: ResultadoUiState, onBack: () -> Uni
             }
             TarjetaSeccion(titulo = "Declarado vs. demostrado") {
                 Text(
-                    "El nivel demostrado sube con un mini-test aprobado o una evidencia validada.",
+                    "El nivel demostrado sube al aprobar la evaluación o un mini-test, o con una evidencia validada.",
                     style = MaterialTheme.typography.bodySmall,
                     color = ChambaTema.colores.textoSecundario,
                 )
@@ -268,23 +173,6 @@ fun ResultadoAutoevaluacionContenido(estado: ResultadoUiState, onBack: () -> Uni
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 780)
-@Composable
-private fun AutoevaluacionPreview() {
-    ChambaReadyTheme {
-        AutoevaluacionContenido(
-            AutoevaluacionUiState(
-                AreaInteres.DATA_ANALYTICS,
-                listOf(
-                    PreguntaOpcion("p1", "¿Qué devuelve esta consulta?", listOf("El total por región", "Una fila por venta", "No lo sé"), 0, codigo = "SELECT region, SUM(monto)\nFROM ventas GROUP BY region;"),
-                ),
-                respuestas = mapOf("p1" to 0),
-            ),
-            onBack = {}, onResponder = { _, _ -> }, onTerminar = {},
-        )
     }
 }
 

@@ -92,6 +92,9 @@ sealed interface NavRoutes {
     /** P17 */
     @Serializable data class Postular(val vacanteId: String) : NavRoutes
 
+    /** Evaluación de habilidades desde Perfil (gratis: 1 vez). En el registro se usa Autoevaluacion (P05). */
+    @Serializable data object EvaluarHabilidades : NavRoutes
+
     /** P24 */
     @Serializable data class PreguntasFiltro(val vacanteId: String, val postulacionId: String? = null) : NavRoutes
 

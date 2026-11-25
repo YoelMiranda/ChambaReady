@@ -58,6 +58,11 @@ export function LoginPage() {
 
   return (
     <MarcoAcceso titulo="Inicia sesión">
+      {estado.tipo === "anonimo" && estado.aviso && (
+        <div className="aviso aviso--rojo" role="alert">
+          {estado.aviso}
+        </div>
+      )}
       {estado.tipo === "otroRol" && (
         <div className="aviso aviso--ambar" role="status">
           La cuenta {estado.correo} es de practicante. Los estudiantes usan la app de ChambaReady; para la web de empresas usa otra cuenta.

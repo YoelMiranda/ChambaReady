@@ -128,4 +128,26 @@ class ApiRemotaTest {
         responder(404, """{"codigo":"NO_ENCONTRADO","mensaje":"Esta vacante no existe."}""")
         assertNull(RemotoVacanteRepository(api, json).obtenerVacante("nada"))
     }
+
+    @Test
+    fun `la evaluacion trae un mini-test por habilidad sin respuestas`() = runTest {
+        responder(
+            200,
+            """{"id":"ev1","pruebas":[{"id":"mt1","habilidadId":"sql","habilidad":"SQL","nivel":"INTERMEDIO",
+               "preguntas":[{"enunciado":"P1","opciones":["a","b","c","d"]}]}]}""",
+        )
+        val pruebas = CuentaRemotaRepository(api, json).iniciarEvaluacion(listOf("sql"))
+        assertEquals("""{"habilidades":["sql"]}""", servidor.takeRequest().body?.utf8())
+        val prueba = pruebas.single()
+        assertEquals(pe.edu.esan.chambaready.core.domain.modelo.NivelHabilidad.INTERMEDIO, prueba.nivel)
+        assertEquals(pe.edu.esan.chambaready.core.data.remoto.SIN_RESPUESTA, prueba.preguntas.single().indiceCorrecto)
+    }
+
+    @Test
+    fun `el asistente devuelve las habilidades que entendio`() = runTest {
+        responder(200, """{"respuesta":"Anotado","habilidades":[{"habilidadId":"excel","nombre":"Excel","nivel":"AVANZADO"}],"conIa":true}""")
+        val r = CuentaRemotaRepository(api, json).conversarAsistente("Sé Excel avanzado", emptyMap())
+        assertEquals("Anotado", r.respuesta)
+        assertEquals(mapOf("excel" to pe.edu.esan.chambaready.core.domain.modelo.NivelHabilidad.AVANZADO), r.habilidades)
+    }
 }

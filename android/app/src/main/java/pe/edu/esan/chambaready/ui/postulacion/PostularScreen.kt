@@ -71,6 +71,7 @@ data class PostularUiState(
     val enviando: Boolean = false,
     /** Con backend, el servidor corrige: no se sabe cuántas acertó hasta enviar. */
     val correccionEnServidor: Boolean = false,
+    val totalPreguntas: Int = 0,
 ) {
     val puedePostular: Boolean
         get() = vacante?.let { v ->
@@ -112,9 +113,12 @@ class PostularViewModel @Inject constructor(
                         vacante = vacante,
                         sellos = servicio.sellos(vacante, e, loCumple),
                         hayPreguntas = vacante.evaluacionActiva && vacante.empresaConEvaluaciones,
-                        preguntasRespondidas = respuestas != null,
+                        // Con backend, "respondidas" se marca con una lista vacía y las opciones viven en
+                        // memoria (RespuestasFiltroSesion). Si la app se cerró y se perdieron, se vuelven a responder.
+                        preguntasRespondidas = respuestas != null && (respuestas.isNotEmpty() || sesion.obtener(vacanteId) != null),
                         aciertos = respuestas?.count { it } ?: 0,
-                        correccionEnServidor = sesion.obtener(vacanteId) != null,
+                        totalPreguntas = respuestas?.size ?: 0,
+                        correccionEnServidor = respuestas?.isEmpty() == true,
                     )
                 }
             }
@@ -250,7 +254,7 @@ fun PostularContenido(
                             if (estado.correccionEnServidor) {
                                 "Respondiste las preguntas. Al enviar, las bien respondidas confirman su requisito."
                             } else {
-                                "Respondiste las preguntas: ${estado.aciertos} de 2 correctas. Las bien respondidas confirman su requisito."
+                                "Respondiste las preguntas: ${estado.aciertos} de ${estado.totalPreguntas} correctas. Las bien respondidas confirman su requisito."
                             },
                             style = MaterialTheme.typography.bodyMedium,
                         )

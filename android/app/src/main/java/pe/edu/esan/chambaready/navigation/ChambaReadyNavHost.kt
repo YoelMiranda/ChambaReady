@@ -185,4 +185,7 @@ fun NavHostController.irAPestana(pestana: NavRoutes) {
         launchSingleTop = true
         restoreState = true
     }
+    // Si la pestaña tenía pantallas encima (detalle, postular, diagnóstico…), se vuelve a su lista:
+    // la pestaña conserva sus filtros y su scroll, pero no abre la última pantalla visitada.
+    popBackStack(pestana, inclusive = false)
 }

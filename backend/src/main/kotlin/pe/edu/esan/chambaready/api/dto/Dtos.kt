@@ -366,3 +366,20 @@ data class MetricasDto(
     val porcentajeMiniTestsAprobados: Int,
     val costoIaUsd: Double,
 )
+
+// ---------- Evaluación de habilidades (P05 y Perfil) ----------
+@Serializable data class IniciarEvaluacionDto(val habilidades: List<String>)
+
+/** Un mini-test por habilidad elegida, al nivel declarado. Se responden con POST /v1/yo/mini-tests/{id}/respuestas. */
+@Serializable data class EvaluacionDto(val id: String, val pruebas: List<MiniTestDto>)
+
+/** Con cuenta gratis se puede evaluar una sola vez; con Premium, sin límite. */
+@Serializable data class EstadoEvaluacionDto(val puedeEvaluar: Boolean, val usadas: Int, val premium: Boolean)
+
+// ---------- Asistente de perfil (P02) ----------
+/** [habilidades]: lo que ya tiene el perfil (id → nivel), para que la IA no lo repita. */
+@Serializable data class MensajeAsistenteDto(val mensaje: String, val habilidades: Map<String, String> = emptyMap())
+
+/** Respuesta del asistente y las habilidades (del catálogo) que entendió del mensaje. */
+@Serializable
+data class RespuestaAsistenteDto(val respuesta: String, val habilidades: List<HabilidadDetectadaDto>, val conIa: Boolean)

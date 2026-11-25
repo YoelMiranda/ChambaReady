@@ -33,6 +33,8 @@ import pe.edu.esan.chambaready.api.dto.AgendarEntrevistaDto
 import pe.edu.esan.chambaready.api.dto.AnalizarCvDto
 import pe.edu.esan.chambaready.api.dto.AutoevaluacionDto
 import pe.edu.esan.chambaready.api.dto.CrearEvidenciaDto
+import pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto
+import pe.edu.esan.chambaready.api.dto.MensajeAsistenteDto
 import pe.edu.esan.chambaready.api.dto.LogoDto
 import pe.edu.esan.chambaready.api.dto.ResponderFiltroDto
 import pe.edu.esan.chambaready.api.dto.ResponderMiniTestDto
@@ -148,6 +150,10 @@ fun Route.rutasPracticante(d: Dependencias) {
             call.respond(d.practicante.responderMiniTest(call.yo(), call.parametro("id"), call.receive<ResponderMiniTestDto>()))
         }
         post("/autoevaluacion") { call.respond(d.practicante.autoevaluacion(call.yo(), call.receive<AutoevaluacionDto>())) }
+        // Evaluación de habilidades (gratis: 1 vez) y asistente de perfil con IA.
+        get("/evaluacion") { call.respond(d.practicante.estadoEvaluacion(call.yo())) }
+        post("/evaluacion") { call.respond(d.practicante.iniciarEvaluacion(call.yo(), call.receive<IniciarEvaluacionDto>())) }
+        post("/asistente") { call.respond(d.practicante.conversarAsistente(call.yo(), call.receive<MensajeAsistenteDto>())) }
         // F7: evidencias.
         get("/evidencias") { call.respond(d.practicante.evidencias(call.yo())) }
         post("/evidencias") { call.respond(HttpStatusCode.Created, d.practicante.crearEvidencia(call.yo(), call.receive<CrearEvidenciaDto>())) }

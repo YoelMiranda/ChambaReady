@@ -15,6 +15,7 @@ import pe.edu.esan.chambaready.ui.plan.MiProgresoScreen
 import pe.edu.esan.chambaready.ui.plan.MiniTestScreen
 import pe.edu.esan.chambaready.ui.plan.PendientesScreen
 import pe.edu.esan.chambaready.ui.plan.PlanScreen
+import pe.edu.esan.chambaready.ui.autoevaluacion.EvaluacionHabilidadesScreen
 import pe.edu.esan.chambaready.ui.postulacion.PostulacionesScreen
 import pe.edu.esan.chambaready.ui.postulacion.PostularScreen
 import pe.edu.esan.chambaready.ui.postulacion.PreguntasFiltroScreen
@@ -69,7 +70,20 @@ fun NavGraphBuilder.grafoPracticante(
             onEvidencias = { navController.navigate(NavRoutes.MisEvidencias) },
             onArea = { navController.navigate(NavRoutes.AreaInteres(modoEdicion = true)) },
             onTiempoLibre = { navController.navigate(NavRoutes.EditarTiempoLibre) },
+            onEvaluar = { navController.navigate(NavRoutes.EvaluarHabilidades) },
             onSesionCerrada = onCerrarSesion,
+        )
+    }
+    composable<NavRoutes.EvaluarHabilidades> {
+        EvaluacionHabilidadesScreen(
+            desdeRegistro = false,
+            onBack = volver,
+            // Muestra el resultado; "Ir al inicio" vuelve a la app.
+            onTerminar = {
+                navController.navigate(NavRoutes.ResultadoAutoevaluacion) { popUpTo<NavRoutes.EvaluarHabilidades> { inclusive = true } }
+            },
+            onSaltar = volver,
+            onPremium = { navController.navigate(NavRoutes.Premium()) },
         )
     }
 

@@ -31,6 +31,11 @@ data class HabilidadDetectada(val habilidadId: String, val nombre: String, val n
 
 data class CvLeido(val habilidades: List<HabilidadDetectada>, val proyectos: List<String>)
 
+@Serializable data class AsistenteIa(val respuesta: String, val habilidades: List<HabilidadCvIa>)
+
+/** Lo que entendió el asistente de un mensaje del estudiante (P02). */
+data class RespuestaAsistente(val respuesta: String, val habilidades: List<HabilidadDetectada>)
+
 /** Esquemas de respuesta (formato OpenAPI que entiende Gemini en responseSchema). */
 object Esquemas {
     private fun texto() = buildJsonObject { put("type", "STRING") }
@@ -69,6 +74,20 @@ object Esquemas {
             ),
         ),
         "proyectos" to lista(texto()),
+    )
+
+    /** Respuesta corta del asistente y las habilidades (nombre + nivel) que entendió del mensaje. */
+    val asistente: JsonObject = objeto(
+        "respuesta" to texto(),
+        "habilidades" to lista(
+            objeto(
+                "habilidad" to texto(),
+                "nivel" to buildJsonObject {
+                    put("type", "STRING")
+                    put("enum", JsonArray(listOf("BASICO", "INTERMEDIO", "AVANZADO").map { JsonPrimitive(it) }))
+                },
+            ),
+        ),
     )
 }
 
@@ -124,6 +143,20 @@ object ValidacionIa {
         val proyectos = leido.proyectos.map { it.trim().take(120) }.filter { it.isNotEmpty() }.distinct().take(MAX_PROYECTOS_CV)
         return CvLeido(habilidades, proyectos)
     }
+}
+
+private val jsonAsistente = Json { ignoreUnknownKeys = true }
+
+/** Valida la respuesta del asistente: solo habilidades del catálogo y una respuesta corta. */
+fun ValidacionIa.asistente(texto: String, catalogo: Map<String, String>): RespuestaAsistente {
+    val leido = try {
+        jsonAsistente.decodeFromString<AsistenteIa>(texto)
+    } catch (e: Exception) {
+        throw ErrorIa("La IA no respondió con el formato pedido.", e)
+    }
+    val habilidades = cv(Json.encodeToString(CvIa.serializer(), CvIa(leido.habilidades, emptyList())), catalogo).habilidades
+    val respuesta = leido.respuesta.trim().take(500).ifEmpty { "Listo, actualicé tu perfil." }
+    return RespuestaAsistente(respuesta, habilidades)
 }
 
 /**

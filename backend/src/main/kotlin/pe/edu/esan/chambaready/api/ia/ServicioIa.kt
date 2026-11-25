@@ -58,16 +58,33 @@ class ServicioIa(
         return textoDocx?.let { CvLeido(Textos.habilidadesEnTexto(it, catalogo), emptyList()) } ?: ContenidoSimulado.cvVacio
     }
 
-    /** P15: 3 preguntas para comprobar el [nivel] en una habilidad. */
-    suspend fun preguntasMiniTest(habilidadId: String, nombre: String, nivel: String, usuarioId: String?): List<PreguntaIa> {
+    /**
+     * P15 y evaluación de habilidades: 3 preguntas para comprobar el [nivel] en una habilidad.
+     * Las técnicas se preguntan con casos de trabajo; las blandas, con situaciones ("¿qué harías si…?").
+     * @param tipo TECNICA o BLANDA (tabla habilidades).
+     */
+    suspend fun preguntasMiniTest(habilidadId: String, nombre: String, nivel: String, usuarioId: String?, tipo: String = "TECNICA"): List<PreguntaIa> {
+        val dificultad = when (nivel) {
+            "AVANZADO" -> "nivel AVANZADO: casos complejos, optimización, buenas prácticas, depuración y decisiones de diseño. " +
+                "PROHIBIDO preguntar sintaxis elemental o conceptos de principiante (por ejemplo, sumar una lista)."
+            "INTERMEDIO" -> "nivel INTERMEDIO: aplicar la habilidad en situaciones prácticas, combinar funciones y resolver problemas comunes. " +
+                "Nada de definiciones básicas."
+            else -> "nivel BÁSICO: conceptos fundamentales y uso cotidiano."
+        }
+        val estilo = if (tipo == "BLANDA") {
+            "Es una habilidad BLANDA: usa situaciones laborales realistas (\"¿qué harías si…?\") donde una opción sea claramente la más profesional."
+        } else {
+            "Es una habilidad TÉCNICA: usa casos reales de una práctica preprofesional; puedes incluir código o fórmulas cortas en el enunciado."
+        }
         val pedido = PedidoIa(
             operacion = "MINI_TEST",
             modelo = modeloSimple,
             instrucciones = """
-                Crea exactamente 3 preguntas de opción múltiple en español para comprobar si un estudiante
-                universitario tiene nivel $nivel en "$nombre". Cada pregunta tiene 4 opciones, una sola correcta,
-                sin opciones del tipo "todas las anteriores". Preguntas prácticas, de situaciones reales de una práctica
-                preprofesional. Varía la posición de la respuesta correcta.
+                Crea exactamente 3 preguntas de opción múltiple en español para comprobar si un estudiante universitario
+                domina "$nombre" en $dificultad
+                $estilo
+                Cada pregunta tiene 4 opciones, una sola correcta, sin "todas las anteriores" ni "ninguna de las anteriores".
+                Varía la posición de la respuesta correcta.
             """.trimIndent(),
             partes = listOf(ParteIa.Texto("Habilidad: $nombre. Nivel: $nivel.")),
             esquema = Esquemas.preguntas,
@@ -97,6 +114,32 @@ class ServicioIa(
         )
         return llamar(pedido, empresaId = empresaId) { ValidacionIa.preguntas(it, elegidos.size) }
             ?: ContenidoSimulado.preguntasFiltro(elegidos.map { it.first to it.second })
+    }
+
+    /**
+     * P02: el estudiante escribe para agregar habilidades que no estaban en su CV o aclarar algo.
+     * La IA responde corto y devuelve solo habilidades del catálogo con su nivel.
+     * @param actuales lo que ya tiene el perfil (id → nivel), para no repetirlo.
+     */
+    suspend fun conversar(usuarioId: String, mensaje: String, actuales: Map<String, String>, catalogo: Map<String, String>): RespuestaAsistente {
+        val perfil = actuales.entries.joinToString { (id, nivel) -> "${catalogo[id] ?: id}: $nivel" }.ifEmpty { "(vacío)" }
+        val pedido = PedidoIa(
+            operacion = "ASISTENTE",
+            modelo = modeloSimple,
+            instrucciones = """
+                Eres el asistente de perfil de ChambaReady, para estudiantes universitarios del Perú. Respondes en español,
+                en 1 o 2 frases, con tono amable. El estudiante te cuenta habilidades que no estaban en su CV o aclara alguna.
+                En "habilidades" devuelve SOLO las que mencione en este mensaje y que estén en esta lista (nombre exacto):
+                ${catalogo.values.joinToString(", ")}.
+                Estima el nivel (BASICO, INTERMEDIO o AVANZADO) con lo que diga; si no lo dice, pregúntale en la respuesta y usa BASICO.
+                Si menciona algo que no está en la lista, dile que por ahora no se puede agregar.
+                Perfil actual: $perfil.
+            """.trimIndent(),
+            partes = listOf(ParteIa.Texto(mensaje.take(1_000))),
+            esquema = Esquemas.asistente,
+        )
+        return llamar(pedido, usuarioId = usuarioId) { ValidacionIa.asistente(it, catalogo) }
+            ?: ContenidoSimulado.asistente(mensaje, catalogo)
     }
 
     /**

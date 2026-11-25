@@ -33,6 +33,23 @@ data class CvAnalizado(val habilidades: Map<String, NivelHabilidad>, val proyect
 
 data class NotificacionRemota(val notificacion: Notificacion, val leida: Boolean)
 
+/** Con cuenta gratis la evaluación de habilidades se hace una sola vez; con Premium, sin límite. */
+data class EstadoEvaluacion(val puedeEvaluar: Boolean, val premium: Boolean)
+
+/** Lo que entendió el asistente (P02): su respuesta y las habilidades (id → nivel) del mensaje. */
+data class RespuestaAsistente(val respuesta: String, val habilidades: Map<String, NivelHabilidad>)
+
+private fun nivelDesdeTexto(texto: String, porDefecto: NivelHabilidad) = NivelHabilidad.entries.firstOrNull { it.name == texto } ?: porDefecto
+
+/** Mini-test del backend → modelo de la app. Las preguntas llegan SIN la respuesta. */
+fun MiniTestDto.aRemoto(): MiniTestRemoto = MiniTestRemoto(
+    id = id,
+    nivel = nivelDesdeTexto(nivel, NivelHabilidad.BASICO),
+    preguntas = preguntas.mapIndexed { i, p ->
+        PreguntaOpcion(id = "$id-$i", enunciado = p.enunciado, opciones = p.opciones, indiceCorrecto = SIN_RESPUESTA, habilidadId = habilidadId)
+    },
+)
+
 /**
  * Lo que la cuenta del practicante guarda en el backend: rol, perfil y postulaciones.
  * En MODO DEMO ([CuentaLocalRepository]) nada sale del teléfono.
@@ -93,6 +110,15 @@ interface CuentaRepository {
     suspend fun marcarNotificacionLeida(id: String) = Unit
 
     suspend fun marcarTodasLeidas() = Unit
+
+    /** null en modo demo (el teléfono controla el límite). */
+    suspend fun estadoEvaluacion(): EstadoEvaluacion? = null
+
+    /** Un mini-test por habilidad elegida, al nivel declarado. null en modo demo. */
+    suspend fun iniciarEvaluacion(habilidades: List<String>): List<MiniTestRemoto>? = null
+
+    /** P02: null en modo demo (la app interpreta el mensaje sola). */
+    suspend fun conversarAsistente(mensaje: String, actuales: Map<String, NivelHabilidad>): RespuestaAsistente? = null
 }
 
 /** Implementación con la API /v1. */
@@ -164,15 +190,19 @@ class CuentaRemotaRepository @Inject constructor(
         return llamarApi(json) { api.responderFiltro(postulacionId, cuerpo) }.aDominio()
     }
 
-    override suspend fun miniTest(habilidadId: String): MiniTestRemoto {
-        val dto = llamarApi(json) { api.miniTest(habilidadId) }
-        return MiniTestRemoto(
-            id = dto.id,
-            nivel = NivelHabilidad.entries.firstOrNull { it.name == dto.nivel } ?: NivelHabilidad.BASICO,
-            preguntas = dto.preguntas.mapIndexed { i, p ->
-                PreguntaOpcion(id = "${dto.id}-$i", enunciado = p.enunciado, opciones = p.opciones, indiceCorrecto = SIN_RESPUESTA, habilidadId = habilidadId)
-            },
-        )
+    override suspend fun miniTest(habilidadId: String): MiniTestRemoto = llamarApi(json) { api.miniTest(habilidadId) }.aRemoto()
+
+    override suspend fun estadoEvaluacion(): EstadoEvaluacion {
+        val e = llamarApi(json) { api.estadoEvaluacion() }
+        return EstadoEvaluacion(e.puedeEvaluar, e.premium)
+    }
+
+    override suspend fun iniciarEvaluacion(habilidades: List<String>): List<MiniTestRemoto> =
+        llamarApi(json) { api.iniciarEvaluacion(IniciarEvaluacionDto(habilidades)) }.pruebas.map { it.aRemoto() }
+
+    override suspend fun conversarAsistente(mensaje: String, actuales: Map<String, NivelHabilidad>): RespuestaAsistente {
+        val r = llamarApi(json) { api.conversarAsistente(MensajeAsistenteDto(mensaje, actuales.mapValues { it.value.name })) }
+        return RespuestaAsistente(r.respuesta, r.habilidades.associate { it.habilidadId to nivelDesdeTexto(it.nivel, NivelHabilidad.BASICO) })
     }
 
     override suspend fun responderMiniTest(miniTestId: String, respuestas: List<Int?>, vacanteId: String?): ResultadoMiniTestRemoto {

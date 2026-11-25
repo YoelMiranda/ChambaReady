@@ -16,6 +16,7 @@ import pe.edu.esan.chambaready.api.archivos.ServicioArchivos
 import pe.edu.esan.chambaready.api.archivos.TipoArchivo
 import pe.edu.esan.chambaready.api.db.AreasInteres
 import pe.edu.esan.chambaready.api.db.Empresas
+import pe.edu.esan.chambaready.api.db.EvaluacionesHabilidades
 import pe.edu.esan.chambaready.api.db.Evidencias
 import pe.edu.esan.chambaready.api.db.BaseDatos
 import pe.edu.esan.chambaready.api.db.Habilidades
@@ -39,7 +40,12 @@ import pe.edu.esan.chambaready.api.dto.AnalizarCvDto
 import pe.edu.esan.chambaready.api.dto.AutoevaluacionDto
 import pe.edu.esan.chambaready.api.dto.CrearEvidenciaDto
 import pe.edu.esan.chambaready.api.dto.CvAnalizadoDto
+import pe.edu.esan.chambaready.api.dto.EstadoEvaluacionDto
+import pe.edu.esan.chambaready.api.dto.EvaluacionDto
 import pe.edu.esan.chambaready.api.dto.EvidenciaDto
+import pe.edu.esan.chambaready.api.dto.IniciarEvaluacionDto
+import pe.edu.esan.chambaready.api.dto.MensajeAsistenteDto
+import pe.edu.esan.chambaready.api.dto.RespuestaAsistenteDto
 import pe.edu.esan.chambaready.api.dto.HabilidadDetectadaDto
 import pe.edu.esan.chambaready.api.dto.MiniTestDto
 import pe.edu.esan.chambaready.api.dto.PreguntaDto
@@ -448,25 +454,39 @@ class ServicioPracticante(
      * nivel (y se guardan), así no se paga a Gemini cada vez. Nunca incluyen la respuesta.
      */
     suspend fun miniTest(usuarioId: String, habilidadId: String): MiniTestDto {
-        val (nombre, nivel, guardado) = bd.tx {
-            val habilidad = Habilidades.selectAll().where { Habilidades.id eq habilidadId }.singleOrNull()
-                ?: throw ErrorApi.NoEncontrado("Esta habilidad no existe.")
+        val nivel = bd.tx {
             val niveles = Consultas.niveles(usuarioId)
             // Comprueba el nivel que el estudiante declaró (o el siguiente, si ya lo demostró).
-            val nivel = ReglasNivel.nivelDelMiniTest(niveles.declarado(habilidadId), niveles.demostrado(habilidadId))
-            Triple(habilidad[Habilidades.nombre], nivel, ultimoMiniTest(habilidadId, nivel))
+            ReglasNivel.nivelDelMiniTest(niveles.declarado(habilidadId), niveles.demostrado(habilidadId))
         }
+        return miniTestDeNivel(usuarioId, habilidadId, nivel)
+    }
+
+    /**
+     * Mini-test de [nivel] que el usuario todavía no respondió: se reutiliza uno guardado (ahorra
+     * llamadas a Gemini) o se genera uno nuevo. Así, quien repite recibe preguntas distintas.
+     */
+    private suspend fun miniTestDeNivel(usuarioId: String, habilidadId: String, nivel: NivelHabilidad): MiniTestDto {
+        val (habilidad, guardado) = bd.tx {
+            val fila = Habilidades.selectAll().where { Habilidades.id eq habilidadId }.singleOrNull()
+                ?: throw ErrorApi.NoEncontrado("Esta habilidad no existe.")
+            fila to miniTestNoRespondido(usuarioId, habilidadId, nivel)
+        }
+        val nombre = habilidad[Habilidades.nombre]
         val test = guardado ?: run {
-            val preguntas = ia.preguntasMiniTest(habilidadId, nombre, nivel.name, usuarioId)
-            bd.tx { ultimoMiniTest(habilidadId, nivel) ?: guardarMiniTest(habilidadId, nivel, preguntas) }
+            val preguntas = ia.preguntasMiniTest(habilidadId, nombre, nivel.name, usuarioId, habilidad[Habilidades.tipo])
+            bd.tx { guardarMiniTest(habilidadId, nivel, preguntas) }
         }
         return MiniTestDto(test.first, habilidadId, nombre, nivel.name, test.second.map { PreguntaDto(it.enunciado, it.opciones) })
     }
 
-    private fun ultimoMiniTest(habilidadId: String, nivel: NivelHabilidad): Pair<String, List<PreguntaIa>>? =
-        MiniTests.selectAll().where { (MiniTests.habilidadId eq habilidadId) and (MiniTests.nivel eq nivel.name) }
-            .orderBy(MiniTests.creadoEn, SortOrder.DESC).limit(1).singleOrNull()
+    private fun miniTestNoRespondido(usuarioId: String, habilidadId: String, nivel: NivelHabilidad): Pair<String, List<PreguntaIa>>? {
+        val respondidos = IntentosTest.selectAll().where { IntentosTest.usuarioId eq usuarioId }.mapNotNull { it[IntentosTest.miniTestId] }.toSet()
+        return MiniTests.selectAll().where { (MiniTests.habilidadId eq habilidadId) and (MiniTests.nivel eq nivel.name) }
+            .orderBy(MiniTests.creadoEn, SortOrder.DESC)
+            .firstOrNull { it[MiniTests.id] !in respondidos }
             ?.let { it[MiniTests.id] to json.decodeFromString(ListSerializer(PreguntaIa.serializer()), it[MiniTests.preguntasJson]) }
+    }
 
     private fun guardarMiniTest(habilidadId: String, nivel: NivelHabilidad, preguntas: List<PreguntaIa>): Pair<String, List<PreguntaIa>> {
         val testId = UUID.randomUUID().toString()
@@ -502,6 +522,7 @@ class ServicioPracticante(
             it[IntentosTest.aprobado] = aprobado
             it[nivelAntes] = antes.name
             it[nivelDespues] = despues.name
+            it[IntentosTest.miniTestId] = miniTestId
         }
         Metricas.registrar(usuarioId, "MINI_TEST", mapOf("habilidadId" to habilidadId, "aprobado" to aprobado.toString()))
         ResultadoMiniTestDto(correctas, preguntas.size, aprobado, antes.name, despues.name, preguntas.map { it.indiceCorrecto })
@@ -671,7 +692,65 @@ class ServicioPracticante(
         return evidencias(usuarioId).first { it.id == evidenciaId }
     }
 
+
+    // ---------- Evaluación de habilidades (P05 y Perfil) ----------
+
+    /** Con cuenta gratis se evalúa una sola vez; con Premium, sin límite. */
+    suspend fun estadoEvaluacion(usuarioId: String): EstadoEvaluacionDto = bd.tx {
+        val usadas = EvaluacionesHabilidades.selectAll().where { EvaluacionesHabilidades.usuarioId eq usuarioId }.count().toInt()
+        val premium = esPremium(usuarioId)
+        EstadoEvaluacionDto(puedeEvaluar = premium || usadas < EVALUACIONES_GRATIS, usadas = usadas, premium = premium)
+    }
+
+    /**
+     * Arma la evaluación: un mini-test por habilidad elegida (máximo 4), al nivel que el estudiante
+     * declaró. Las respuestas van a POST /v1/yo/mini-tests/{id}/respuestas, que sube el nivel
+     * demostrado si aprueba: así sus requisitos pasan de "Declarado" a "Confirmado" al postular.
+     */
+    suspend fun iniciarEvaluacion(usuarioId: String, datos: IniciarEvaluacionDto): EvaluacionDto {
+        val elegidas = datos.habilidades.distinct()
+        if (elegidas.isEmpty() || elegidas.size > MAX_HABILIDADES_EVALUACION) {
+            throw ErrorApi.SolicitudInvalida("Elige de 1 a $MAX_HABILIDADES_EVALUACION habilidades.")
+        }
+        val (evaluacionId, niveles) = bd.tx {
+            val estado = EvaluacionesHabilidades.selectAll().where { EvaluacionesHabilidades.usuarioId eq usuarioId }.count()
+            if (!esPremium(usuarioId) && estado >= EVALUACIONES_GRATIS) {
+                throw ErrorApi.ReglaDeNegocio("EVALUACION_USADA", "Con la cuenta gratis puedes evaluarte una sola vez. Con Premium te evalúas cuando quieras.")
+            }
+            val niveles = Consultas.niveles(usuarioId)
+            val sinDeclarar = elegidas.filter { niveles.declarado(it).valor == 0 }
+            if (sinDeclarar.isNotEmpty()) throw ErrorApi.SolicitudInvalida("Solo puedes evaluar habilidades que declaraste en tu perfil.")
+            val nuevaId = UUID.randomUUID().toString()
+            EvaluacionesHabilidades.insert {
+                it[id] = nuevaId
+                it[EvaluacionesHabilidades.usuarioId] = usuarioId
+                it[habilidades] = elegidas.joinToString(",")
+                it[creadaEn] = ahora()
+            }
+            Metricas.registrar(usuarioId, "EVALUACION_HABILIDADES", mapOf("habilidades" to elegidas.size.toString()))
+            nuevaId to niveles
+        }
+        // Fuera de la transacción: generar preguntas puede tardar (Gemini).
+        val pruebas = elegidas.map { id -> miniTestDeNivel(usuarioId, id, ReglasNivel.nivelDelMiniTest(niveles.declarado(id), niveles.demostrado(id))) }
+        return EvaluacionDto(evaluacionId, pruebas)
+    }
+
+    // ---------- Asistente de perfil (P02) ----------
+
+    /** El estudiante agrega habilidades que no estaban en su CV o aclara alguna, escribiendo libremente. */
+    suspend fun conversarAsistente(usuarioId: String, datos: MensajeAsistenteDto): RespuestaAsistenteDto {
+        val mensaje = datos.mensaje.trim()
+        if (mensaje.isEmpty()) throw ErrorApi.SolicitudInvalida("Escribe un mensaje.")
+        val catalogo = bd.tx { Habilidades.selectAll().associate { it[Habilidades.id] to it[Habilidades.nombre] } }
+        val r = ia.conversar(usuarioId, mensaje, datos.habilidades, catalogo)
+        return RespuestaAsistenteDto(r.respuesta, r.habilidades.map { HabilidadDetectadaDto(it.habilidadId, it.nombre, it.nivel) }, ia.conIa)
+    }
+
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
+
+        /** Evaluaciones de habilidades con la cuenta gratis. */
+        const val EVALUACIONES_GRATIS = 1
+        const val MAX_HABILIDADES_EVALUACION = 4
     }
 }

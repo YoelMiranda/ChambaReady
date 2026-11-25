@@ -40,9 +40,12 @@ Los errores tienen la forma `{"codigo": "...", "mensaje": "..."}`.
 | GET | `/v1/yo/postulaciones` | Sus postulaciones, con el motivo de descarte y `preguntasPendientes` (regla 13). |
 | POST | `/v1/yo/postulaciones/{id}/respuestas-filtro` | Regla 13: responde las preguntas que pidió la empresa. Gasta la evaluación y confirma los sellos acertados. |
 | POST | `/v1/yo/cv` | `{"archivoId"}` de un CV ya subido: lo asigna al perfil y la IA detecta habilidades del catálogo y proyectos. |
-| GET | `/v1/yo/mini-tests/{habilidadId}` | 3 preguntas **sin** respuesta para subir al siguiente nivel. Se generan una vez por habilidad y nivel. |
+| GET | `/v1/yo/mini-tests/{habilidadId}` | 3 preguntas **sin** respuesta del nivel **declarado** (o el siguiente, si ya lo demostró). Técnicas: casos; blandas: situaciones. Quien repite recibe preguntas nuevas. |
 | POST | `/v1/yo/mini-tests/{id}/respuestas` | Corrige en el servidor. Solo aprobar (2 de 3) sube el nivel demostrado (regla 4). |
 | POST | `/v1/yo/autoevaluacion` | Guarda el resultado y devuelve el **ranking privado** «Top X %» dentro del área. |
+| GET | `/v1/yo/evaluacion` | ¿Puede evaluarse? Con cuenta gratis, **una sola vez**; con Premium, sin límite. |
+| POST | `/v1/yo/evaluacion` | `{"habilidades": [...]}` (1 a 4 declaradas): un mini-test por habilidad, **al nivel declarado**. Se responden con `/v1/yo/mini-tests/{id}/respuestas`; aprobar confirma el requisito al postular. |
+| POST | `/v1/yo/asistente` | P02: el estudiante agrega o aclara habilidades escribiendo; la IA devuelve su respuesta y las habilidades del catálogo que entendió. |
 | GET / POST | `/v1/yo/evidencias` | Lista y sube evidencias (certificado con archivo o link). Quedan «En revisión». |
 | GET | `/v1/yo/premium` | Estado de Premium y pagos simulados. |
 | POST | `/v1/yo/premium/pago-simulado` | **Pago simulado** (no se cobra): Premium por 30 días. |
