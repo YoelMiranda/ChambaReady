@@ -48,10 +48,20 @@ class AreaInteresViewModel @Inject constructor(
 ) : BaseViewModel<AreaUiState, Nothing>(AreaUiState()) {
 
     init {
-        viewModelScope.launch { setState { copy(seleccionada = estadoRepositorio.estado.first().area) } }
+        viewModelScope.launch {
+            val areaGuardada = estadoRepositorio.estado.first().area
+
+            setState {
+                copy(seleccionada = areaGuardada)
+            }
+        }
     }
 
-    fun elegir(area: AreaInteres) = setState { copy(seleccionada = area) }
+    fun elegir(area: AreaInteres) {
+        viewModelScope.launch {
+            setState { copy(seleccionada = area) }
+        }
+    }
 
     fun guardar(alTerminar: () -> Unit) {
         val area = currentState.seleccionada ?: return

@@ -25,7 +25,7 @@ val webEmpresaUrl: String = propiedadesLocales.getProperty("WEB_EMPRESA_URL", "h
 
 android {
     namespace = "pe.edu.esan.chambaready"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "pe.edu.esan.chambaready"

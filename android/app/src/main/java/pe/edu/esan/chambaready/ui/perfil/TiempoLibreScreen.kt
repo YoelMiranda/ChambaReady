@@ -53,11 +53,22 @@ class TiempoLibreViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            setState { copy(horas = estadoRepositorio.estado.first().horasLibres, cargado = true) }
+            val horasGuardadas = estadoRepositorio.estado.first().horasLibres
+
+            setState {
+                copy(
+                    horas = horasGuardadas,
+                    cargado = true
+                )
+            }
         }
     }
 
-    fun cambiar(horas: HorasLibres) = setState { copy(horas = horas) }
+    fun cambiar(horas: HorasLibres) {
+        viewModelScope.launch {
+            setState { copy(horas = horas) }
+        }
+    }
 
     /** Guarda y devuelve los puestos que eran viables y con las nuevas horas ya no lo son. */
     fun guardar(alTerminar: (dejanDeSerAlcanzables: List<String>) -> Unit) {
