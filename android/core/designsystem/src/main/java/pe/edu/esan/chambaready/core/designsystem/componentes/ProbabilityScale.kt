@@ -68,6 +68,7 @@ fun ProbabilityScale(
                 Text(
                     text = "$etiqueta · $valor %",
                     style = MaterialTheme.typography.labelSmall,
+                    color = Color.White, // Siempre legible sobre el marcador oscuro.
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }

@@ -26,7 +26,12 @@ val JetBrainsMono = FontFamily(
     Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
 )
 
-private val Base = TextStyle(fontFamily = PlusJakartaSans, color = TextoPrincipal)
+/**
+ * Sin color fijo a propósito: el texto toma el color de su contenedor (LocalContentColor). Así sale
+ * oscuro sobre fondos claros (onBackground/onSurface = TextoPrincipal) y blanco sobre botones o el
+ * marcador negro de la escala. Con un color fijo aquí, esos textos quedaban oscuros sobre oscuro.
+ */
+private val Base = TextStyle(fontFamily = PlusJakartaSans)
 
 /**
  * Escala tipográfica. Equivalencias con el sistema de diseño:
